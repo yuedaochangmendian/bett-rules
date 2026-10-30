@@ -32,3 +32,4 @@ Thumbs.db
 # Local markdown files (keep README.md tracked)
 *.md
 !README.md
+!SRS.md

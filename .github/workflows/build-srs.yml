@@ -1,0 +1,58 @@
+name: build-srs
+
+on:
+  schedule:
+    # 00:00 UTC = 08:00 Asia/Shanghai, ~1.5h after upstream's 06:30 build
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      sets:
+        description: "rule-set names from the sing branch (space separated)"
+        required: false
+        default: "geolocation-!cn"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-srs
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      SING_BOX_VERSION: "1.14.4"
+      SRC_REPO: appshubcc/bett-rules
+      SRC_REF: sing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build single rule-set
+        env:
+          SETS: ${{ github.event.inputs.sets || 'geolocation-!cn' }}
+        run: bash scripts/build-srs.sh
+
+      - name: Publish to srs branch
+        run: |
+          set -euo pipefail
+          cd dist
+          git init -q -b srs
+          git add -A
+          git -c user.name="github-actions[bot]" \
+              -c user.email="github-actions[bot]@users.noreply.github.com" \
+              commit -qm "rebuild $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" srs
+
+      - name: Publish release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! gh release view srs-latest >/dev/null 2>&1; then
+            gh release create srs-latest \
+              --title "sing-box rule-set (latest)" \
+              --notes "Single .srs auto-built from appshubcc/bett-rules. See SRS.md."
+          fi
+          gh release upload srs-latest dist/bett.srs dist/bett.json dist/meta.json --clobber
