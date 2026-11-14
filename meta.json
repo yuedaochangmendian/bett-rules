@@ -1,0 +1,10 @@
+{
+  "source_repo": "appshubcc/bett-rules",
+  "source_ref": "sing",
+  "source_commit": "761b55246da8464210ee71857ddd541c4d411b9c",
+  "sets": "geolocation-!cn",
+  "sing_box_version": "1.14.4",
+  "generated_at": "2026-11-14T03:55:14Z",
+  "srs_bytes": 188976,
+  "json_bytes": 871275
+}
